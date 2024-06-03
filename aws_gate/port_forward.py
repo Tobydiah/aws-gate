@@ -19,22 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class SSMPortForwardSession(BaseSession):
-    """
-    SSM Port Forward Session to local or remote via instance
-
-    Refer to SSM Documents:
-     * AWS-StartPortForwardingSession
-     * AWS-StartPortForwardingSessionToRemoteHost
-
-    :param instance_id: The instance ID to connect to
-    :param target_port: The target port to forward to
-    :param target_host: The target host to forward to
-    :param region_name: The region name
-    :param profile_name: The profile name
-    :param local_port: The local port
-    :param ssm: The SSM client
-    """
-
     def __init__(
         self,
         instance_id,
