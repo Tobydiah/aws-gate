@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from aws_gate.constants import AWS_DEFAULT_PROFILE, AWS_DEFAULT_REGION
 from aws_gate.decorators import (
@@ -40,7 +39,7 @@ class SSMPortForwardSession(BaseSession):
         self,
         instance_id,
         target_port: int,
-        target_host: Optional[str] = None,
+        target_host=None,
         region_name=AWS_DEFAULT_REGION,
         profile_name=AWS_DEFAULT_PROFILE,
         local_port: int = 7000,
@@ -59,7 +58,7 @@ class SSMPortForwardSession(BaseSession):
             "localPortNumber": [str(self._local_port)],
         }
 
-        # remote forward or local forward
+        # local forward or remote forward
         if self._target_host is None:
             document_name = "AWS-StartPortForwardingSession"
         else:
