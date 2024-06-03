@@ -4,14 +4,18 @@ from aws_gate.port_forward import port_forward, SSMPortForwardSession
 
 
 def test_create_ssm_forward_session(ssm_mock, instance_id):
-    sess = SSMPortForwardSession(instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234)
+    sess = SSMPortForwardSession(
+        instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234
+    )
     sess.create()
 
     assert ssm_mock.start_session.called
 
 
 def test_terminate_ssm_forward_session(ssm_mock, instance_id):
-    sess = SSMPortForwardSession(instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234)
+    sess = SSMPortForwardSession(
+        instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234
+    )
 
     sess.create()
     sess.terminate()
@@ -19,17 +23,35 @@ def test_terminate_ssm_forward_session(ssm_mock, instance_id):
     assert ssm_mock.terminate_session.called
 
 
-def test_open_ssm_forward_session(mocker, instance_id, ssm_mock):
+@pytest.mark.parametrize(
+    "target_host",
+    [
+        None,
+        "my-fun-host",
+    ],
+    ids=["Target is None, Local Forward", "Target is not None, Remote Forward"],
+)
+def test_open_ssm_forward_session(mocker, instance_id, ssm_mock, target_host):
     m = mocker.patch("aws_gate.session_common.execute_plugin", return_value="output")
 
-    sess = SSMPortForwardSession(instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234)
+    sess = SSMPortForwardSession(
+        instance_id=instance_id, ssm=ssm_mock, target_host=target_host, target_port=1234
+    )
     sess.open()
 
+    if target_host:
+        expected_doc_name = "AWS-StartPortForwardingSessionToRemoteHost"
+    else:
+        expected_doc_name = "AWS-StartPortForwardingSession"
+
+    assert sess._session_parameters.get("DocumentName") == expected_doc_name
     assert m.called
 
 
 def test_ssm_forward_session_context_manager(ssm_mock, instance_id):
-    with SSMPortForwardSession(instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234):
+    with SSMPortForwardSession(
+        instance_id=instance_id, ssm=ssm_mock, target_host="localhost", target_port=1234
+    ):
         pass
 
     assert ssm_mock.start_session.called
