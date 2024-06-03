@@ -91,7 +91,7 @@ def get_argument_parser(*args, **kwargs):
 
     # 'port-forward' subcommand
     port_forward_parser = subparsers.add_parser(
-        "port-forward", help="Open new session on instance and forward to target host"
+        "port-forward", help="Open new session on instance and forward to a port locally or remotely"
     )
     port_forward_parser.add_argument("-p", "--profile", help="AWS profile to use")
     port_forward_parser.add_argument("-r", "--region", help="AWS region to use")
@@ -99,10 +99,10 @@ def get_argument_parser(*args, **kwargs):
         "instance_name", help="Instance we wish to open session to"
     )
     port_forward_parser.add_argument(
-        "target_host", help="Host to forward into"
+        "target_port", help="Port to forward to", type=int
     )
     port_forward_parser.add_argument(
-        "target_port", help="Port to forward to", type=int,
+        "--target_host", help="Host to forward into", default=None
     )
     port_forward_parser.add_argument(
         "--local_port", help="Local port to forward to", type=int, default=7000

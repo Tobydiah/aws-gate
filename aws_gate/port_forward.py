@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from aws_gate.constants import AWS_DEFAULT_PROFILE, AWS_DEFAULT_REGION
 from aws_gate.decorators import (
@@ -20,15 +21,17 @@ logger = logging.getLogger(__name__)
 
 class SSMPortForwardSession(BaseSession):
     """
-    SSM Port Forward Session to Remote via instance.
+    SSM Port Forward Session to local or remote via instance
 
-    Refer to SSM Document: AWS-StartPortForwardingSessionToRemoteHost
+    Refer to SSM Documents:
+     * AWS-StartPortForwardingSession
+     * AWS-StartPortForwardingSessionToRemoteHost
 
     :param instance_id: The instance ID to connect to
+    :param target_port: The target port to forward to
     :param target_host: The target host to forward to
     :param region_name: The region name
     :param profile_name: The profile name
-    :param target_port: The target port
     :param local_port: The local port
     :param ssm: The SSM client
     """
@@ -36,8 +39,8 @@ class SSMPortForwardSession(BaseSession):
     def __init__(
         self,
         instance_id,
-        target_host: str,
         target_port: int,
+        target_host: Optional[str] = None,
         region_name=AWS_DEFAULT_REGION,
         profile_name=AWS_DEFAULT_PROFILE,
         local_port: int = 7000,
@@ -51,14 +54,22 @@ class SSMPortForwardSession(BaseSession):
         self._target_port = target_port
         self._local_port = local_port
 
+        forward_parameters = {
+            "portNumber": [str(self._target_port)],
+            "localPortNumber": [str(self._local_port)],
+        }
+
+        # remote forward or local forward
+        if self._target_host is None:
+            document_name = "AWS-StartPortForwardingSession"
+        else:
+            document_name = "AWS-StartPortForwardingSessionToRemoteHost"
+            forward_parameters.update({"host": [self._target_host]})
+
         start_session_kwargs = dict(
             Target=self._instance_id,
-            DocumentName="AWS-StartPortForwardingSessionToRemoteHost",
-            Parameters={
-                "portNumber": [str(self._target_port)],
-                "localPortNumber": [str(self._local_port)],
-                "host": [self._target_host],
-            },
+            DocumentName=document_name,
+            Parameters=forward_parameters,
         )
 
         self._session_parameters = start_session_kwargs
@@ -88,14 +99,23 @@ def port_forward(
     if instance_id is None:
         raise ValueError(f"No instance could be found for name: {instance}")
 
-    logger.info(
-        "Opening SSM Port Forwarding Session to %s:%s via instance %s (%s) via profile %s to %s:%s",
-        target_host,
-        target_port,
-        instance_id,
-        region,
-        profile,
-    )
+    if target_host is None:
+        logger.info(
+            "Opening SSM Port Forwarding Session listening on %s in instance %s (%s) via profile %s to %s:%s",
+            target_port,
+            instance_id,
+            region,
+            profile,
+        )
+    else:
+        logger.info(
+            "Opening SSM Port Forwarding Session to %s:%s via instance %s (%s) via profile %s to %s:%s",
+            target_host,
+            target_port,
+            instance_id,
+            region,
+            profile,
+        )
     with SSMPortForwardSession(
         instance_id,
         region_name=region,
